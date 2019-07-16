@@ -1,0 +1,5 @@
+[create_PE_project]
+CPUs=#DEF-LIST# MC68HC908GP32*
+%define! DoDebugRelease
+%include ..\Config\PE\CPE\HC08.cpe
+[_end_]

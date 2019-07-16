@@ -1,0 +1,157 @@
+/* This is a linker parameter file for the GP32 */
+
+NAMES END /* CodeWarrior will pass all the needed files to the linker by command line. But here you may add your own files too. */
+
+SEGMENTS /* Here all RAM/ROM areas of the device are listed. Used in PLACEMENT below. */ 
+
+/* 
+  OJO: AL MODIFICAR AQUI LA RAM O LA ROM DE UN PROCESO TENEIS QUE IR A kernel.c  A MODIFICAR
+  LAS ENTRADAS CORRESPONDIENTES 
+*/
+    SO_RAM                   =  READ_WRITE   0x0040 TO 0x00F5;    // 182 Bytes para el SO
+    P0_RAM                   =  READ_WRITE   0x00F6 TO 0x012C;    // 55 Bytes para Proceso0
+    P1_RAM                   =  READ_WRITE   0x012D TO 0x0163;    // 55 Bytes para Proceso1
+    P2_RAM                   =  READ_WRITE   0x0164 TO 0x019A;    // 55 Bytes para Proceso2
+    P3_RAM                   =  READ_WRITE   0x019B TO 0x01D1;    // 55 Bytes para Proceso3
+    P4_RAM                   =  READ_WRITE   0x01D2 TO 0x0208;    // 55 Bytes para Proceso4
+    P5_RAM                   =  READ_WRITE   0x0209 TO 0x023F;    // 55 Bytes para Proceso5
+
+    // Les estoy asignando 4KB al SO y 256B a cada proceso
+    SO_ROM                   =  READ_ONLY    0x8000 TO 0x9FFF;
+    P0_ROM                   =  READ_ONLY    0xA000 TO 0xA0FF;
+    P1_ROM                   =  READ_ONLY    0xA100 TO 0xA1FF;    
+    P2_ROM                   =  READ_ONLY    0xA200 TO 0xA2FF;
+    P3_ROM                   =  READ_ONLY    0xA300 TO 0xA3FF;
+    P4_ROM                   =  READ_ONLY    0xA400 TO 0xA4FF;
+    P5_ROM                   =  READ_ONLY    0xA500 TO 0xA6FF;
+    DEMONIOS_ROM             =  READ_ONLY    0xA700 TO 0xA8FF;    // 512B para los demonios
+END
+                     
+PLACEMENT /* Here all predefined and user segments are placed into the SEGMENTS defined above. */
+    DEFAULT_RAM, 
+    _DATA_ZEROPAGE, MY_ZEROPAGE         INTO  SO_RAM;
+    DATOS___P0                          INTO  P0_RAM;
+    DATOS___P1                          INTO  P1_RAM;
+    DATOS___P2                          INTO  P2_RAM;
+    DATOS___P3                          INTO  P3_RAM;
+    DATOS___P4                          INTO  P4_RAM;
+    DATOS___P5                          INTO  P5_RAM;
+    DEFAULT_ROM, ROM_VAR, STRINGS       INTO  SO_ROM; /*  In case you want to use  as well, be sure the option -OnB=b is passed to the compiler. */
+    CODIGO__P0                          INTO  P0_ROM;
+    CODIGO__P1                          INTO  P1_ROM;
+    CODIGO__P2                          INTO  P2_ROM;
+    CODIGO__P3                          INTO  P3_ROM;
+    CODIGO__P4                          INTO  P4_ROM;
+    CODIGO__P5                          INTO  P5_ROM;
+    CODIGO__DEMONIOS                    INTO  DEMONIOS_ROM;
+END
+
+STACKSIZE 0x18 // 24 bytes es mas que suficiente (creo...)
+
+/* 
+  Hey dure dias descubriendo que habia que hacer esta mierda:
+
+  El enlazador de CodeWarrior utiliza una funcion que se llama SmartLinking cuyo proposito es
+  optimizar el tamano del programa al enlazar en el archivo ejecutable unicamente los objetos
+  (variables y funciones) que son "llamados" dentro del codigo del programa.
+  
+  El problema que estaba teniendo era que ninguno de los objetos que escribi abajo los "llamaba"
+  directamente en el programa, solo los tenia como referencia para poder ubicarlos. Luego como 
+  no los llamaba, el CodeWarrior no los enlazaba y la simulacion me daba errores. No podia 
+  llamarlos porque, como te podreis dar cuenta, se trata de las pilas y los codigos de los procesos.
+  
+  Para poder enlazarlos hay que "obligar" al enlazador a enlazarlos (valga la rebuznancia) y esto
+  se consigue escribiendo el nombre de los objetos que quereis "enlazar a juro" en ENTRIES. Pero 
+  no creais que eso es todo... despues descubri que para poder utilizar ENTRIES, teneis que compilar
+  el codigo objeto en ELF/DWARF 2.0 porque por defecto el CodeWarrior lo compila en HIWARE y este
+  formato no acepta la directiva ENTRIES... mas fino!!!
+*/
+
+ENTRIES 
+    /* Variables de los PROCESOS del carro */
+    PilaP0
+    PilaP1
+    PilaP2
+    PilaP3
+    PilaP4
+    PilaP5
+    
+    TemporalP0
+    
+    BateriaVoltaje
+    
+    GasolinaNivel
+    
+    TemporalP3
+    TemporalDesbordeVel
+    TemporalDesbordeTIM2
+    TemporalVelocidad
+
+    TemporalP4
+    TemporalDesbordeRPM
+    TemporalDesbordeTIM1
+    TemporalRPM
+    
+    TemporalP5
+    NIBBLES
+    contador
+    GRUPOS_HEX
+    CODIFICADAS
+
+    BajaSAEUSB
+    
+    /* Variables de los DEMONIOS del carro */
+    ControlarTableroEstado
+    TableroActualizar
+    TableroVelocidad
+    TableroGasolina
+    TableroRPM
+    TableroBateria
+    TableroLED
+    OsciladorEstadoPTC3
+    OsciladorEstadoPTC2
+    OsciladorTemp
+
+    /* Variables de las FUNCIONES del kernel */
+    Temporal
+    Proceso
+    ColaDeListos
+    ColaDeBloqueados
+    ColaDeEspera
+    Demonios
+    TempByteA
+    TempWordA
+    TempWordB
+    TempWordC
+
+    /* Variables de las FUNCIONES de hardware */
+    Micro
+    
+    /* FUNCIONES del kernel */
+    Despachador
+    Sistema
+    ActivarDesactivarProceso
+    DesencolarProceso
+    EncolarProceso
+    RutinaInicial
+    
+    /* FUNCIONES de hardware */
+    
+    
+    /* PROCESOS del carro */     
+    VerificarFrenos
+    MedirBateria 
+    MedirGasolina
+    MedirVelocidad
+    MedirRPM
+    EnviarPaquete
+    CrearNibbles   
+    CrearHex
+    CrearCodificado
+
+    /* DEMONIOS del carro */    
+    ControlarTablero
+    OsciladorFrenos
+END
+
+//VECTOR 0 _Startup /* Reset vector: this is the default entry point for an application. */
